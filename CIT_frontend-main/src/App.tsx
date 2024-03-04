@@ -2,6 +2,7 @@ import * as React from "react";
 import Main from './pages/Main/Main';
 import myImage1 from './assets/num1.png'; 
 import myImage2 from './assets/num2.png';
+import CodeTr from "./components/webcam/CodeTr";
 
 function App() {
   
@@ -15,6 +16,7 @@ function App() {
 
   return (
     <>
+      <CodeTr/>
       <Main/>
       <div>branch cicd test</div>
       <img src={myImage1} alt="My Image" />
