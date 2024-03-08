@@ -113,7 +113,7 @@ class Participant {
 }
 
 // React 컴포넌트
-const App: React.FC = () => {
+const CodeTr: React.FC = () => {
   const ws = useRef<WebSocket | null>(null);
   const participants: { [name: string]: Participant } = {};
   const name = useRef<HTMLInputElement>(null);
@@ -287,4 +287,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+export default CodeTr;
