@@ -3,6 +3,7 @@ import Main from './pages/Main/Main';
 import myImage1 from './assets/num1.png'; 
 import myImage2 from './assets/num2.png';
 import Webcam from "./components/webcam/Webcam";
+import CodeTr from "./components/webcam/CodeTr";
 
 function App() {
   
@@ -16,7 +17,7 @@ function App() {
 
   return (
     <>
-    <Webcam/>
+    <CodeTr/>
       {/*<Main/>
       <div>branch cicd test</div>
       <img src={myImage1} alt="My Image" />
