@@ -99,6 +99,7 @@ class Participant {
 
 // React 컴포넌트 정의
 const CodeTr: React.FC = () => {
+  const [showJoinRoomInput,setShowJoinRoomInput] = React.useState(false);
   const ws = useRef<WebSocket | null>(null);
   const participants: { [name: string]: Participant } = {};
   const nameRef = useRef<HTMLInputElement>(null);
@@ -148,6 +149,9 @@ const CodeTr: React.FC = () => {
 
   // 방 참가 함수
   const joinRoom = () => {
+    if(!nameRef.current?.value) return;
+    
+    setShowJoinRoomInput(true);
     if (!nameRef.current?.value || !roomIdRef.current?.value) return;
     const message = {
       id: 'joinRoom',
@@ -256,8 +260,11 @@ const CodeTr: React.FC = () => {
     <div>
       <div id='container'>
         <div className='title'>😁FACE OUT😁</div>
-        <input type="text" ref={nameRef} placeholder="Enter your name" />
-        <input type="text" ref={roomIdRef} placeholder="Enter room name" />
+        
+        <input type="text" ref={nameRef} placeholder="Enter your name" /> 
+        {showJoinRoomInput && ( // showJoinRoomInput이 true일 때만 room input 박스를 표시
+          <input type="text" ref={roomIdRef} placeholder="Enter room name" />
+        )}
         <button id="registerBtn" onClick={createRoom}>🔑방 생성🔑</button>
         <button id="registerBtn" onClick={joinRoom}>방 참가</button>
       </div>
