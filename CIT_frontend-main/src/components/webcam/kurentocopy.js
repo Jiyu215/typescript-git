@@ -88,7 +88,7 @@ class Participant {
   }
 }
 
-const App = () => {
+const kurentocopy = () => {
   const ws = useRef(null);
   const participants = {};
   const name = useRef(null);

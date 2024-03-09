@@ -21,37 +21,59 @@ class Participant {
   constructor(name: string, sendMessage: (message: any) => void) {
     this.name = name;
     this.sendMessage = sendMessage;
+    this.rtcPeer = null; //추가
 
     // 컨테이너 및 관련 요소 생성
     this.container = document.createElement('div');
-    this.container.className = PARTICIPANT_CLASS;
+    this.container.className = this.isPresentMainParticipant() ? PARTICIPANT_CLASS : PARTICIPANT_MAIN_CLASS;
     this.span = document.createElement('span');
     this.video = document.createElement('video');
 
-    // 비디오 요소 설정
-    this.video.id = 'video-' + name;
-    this.video.autoplay = true;
-    this.video.controls = false;
+    console.log(this.container)
+    this.onIceCandidate = this.onIceCandidate.bind(this); //추가
 
     // 컨테이너에 요소 추가
     this.container.appendChild(this.video);
     this.container.appendChild(this.span);
-
+    this.container.onclick = this.switchContainerClass.bind(this);
+    
     // 참가자 목록에 컨테이너 추가
     document.getElementById('participants')?.appendChild(this.container);
 
     // 참가자 이름 추가
     this.span.appendChild(document.createTextNode(name));
+    
+    // 비디오 요소 설정
+    this.video.id = 'video-' + name;
+    this.video.autoplay = true;
+    this.video.controls = false;
   }
 
   // 메서드: 컨테이너 요소 반환
   getElement() {
     return this.container;
   }
-
+  
   // 메서드: 비디오 요소 반환
   getVideoElement() {
     return <>{this.video}</>;
+  }
+
+  switchContainerClass() {
+    if (this.container.className === PARTICIPANT_CLASS) {
+      var elements = Array.prototype.slice.call(document.getElementsByClassName(PARTICIPANT_MAIN_CLASS));
+      elements.forEach(function (item) {
+        item.className = PARTICIPANT_CLASS;
+      });
+
+      this.container.className = PARTICIPANT_MAIN_CLASS;
+    } else {
+      this.container.className = PARTICIPANT_CLASS;
+    }
+  }
+
+  isPresentMainParticipant() {
+    return document.getElementsByClassName(PARTICIPANT_MAIN_CLASS).length !== 0;
   }
 
   // 메서드: RTC 피어 생성
@@ -107,6 +129,7 @@ const CodeTr: React.FC = () => {
 
   // WebSocket 연결 및 메시지 수신 이펙트
   useEffect(() => {
+
     ws.current = new WebSocket('wss://focusing.site:8081/signal');
     ws.current.onopen = function () {
       console.log('WebSocket connection opened.');
@@ -217,6 +240,7 @@ const CodeTr: React.FC = () => {
       mediaConstraints: constraints,
       onicecandidate: participant.onIceCandidate.bind(participant),
     };
+    
     participant.createRtcPeer(options);
 
     msg.data.forEach(receiveVideo);
@@ -260,7 +284,6 @@ const CodeTr: React.FC = () => {
     <div>
       <div id='container'>
         <div className='title'>😁FACE OUT😁</div>
-        
         <input type="text" ref={nameRef} placeholder="Enter your name" /> 
         {showJoinRoomInput && ( // showJoinRoomInput이 true일 때만 room input 박스를 표시
           <input type="text" ref={roomIdRef} placeholder="Enter room name" />
@@ -269,6 +292,7 @@ const CodeTr: React.FC = () => {
         <button id="registerBtn" onClick={joinRoom}>방 참가</button>
       </div>
       <button id="leaveBtn" onClick={leaveRoom}>🙌Leave🙌</button>
+      
       <div id='participants'>
         {Object.values(participants).map((participant) => (
           <div key={participant.name}>
