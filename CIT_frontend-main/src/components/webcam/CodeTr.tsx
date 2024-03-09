@@ -10,6 +10,7 @@ const PARTICIPANT_CLASS = 'participant';
 // Participant 클래스 선언
 class Participant {
   name: string;
+  roomId: string;
   container: HTMLDivElement;
   span: HTMLSpanElement;
   video: HTMLVideoElement;
@@ -116,8 +117,8 @@ class Participant {
 const CodeTr: React.FC = () => {
   const ws = useRef<WebSocket | null>(null);
   const participants: { [name: string]: Participant } = {};
-  const name = useRef<HTMLInputElement>(null);
-  const room = useRef<HTMLInputElement>(null);
+  const name = useRef(null);
+  const roomId = useRef(null);
 
   // 웹소켓 연결 및 메시지 수신 이펙트
   useEffect(() => {
@@ -125,7 +126,6 @@ const CodeTr: React.FC = () => {
     ws.current.onopen = function () {
       console.log('WebSocket connection opened.');
     }
-    console.log(name);
     ws.current.onmessage = function (message:any) {
       var parsedMessage = JSON.parse(message.data);
       console.info('Received message: ' + message.data);
@@ -164,15 +164,27 @@ const CodeTr: React.FC = () => {
 
   // 참가자 등록 함수
   const register = () => {
-    if (!name.current || !room.current) return;
-
+    
+    if (!name.current || !roomId.current) return;
     const message = {
-      id: 'join',
+      id: 'joinRoom',
       name: name.current.value,
-      room: room.current.value,
+      roomId: roomId.current.value,
     };
     sendMessage(message);
 
+    document.getElementById('container')?.style.setProperty('visibility', 'hidden');
+    document.getElementById('leaveBtn')?.style.setProperty('visibility', 'visible');
+  };
+
+  const createRoom = () => {
+    if(!name.current) return;
+    const message = {
+      id:'createRoom',
+      name: name.current.value,
+    };
+    sendMessage(message);
+    
     document.getElementById('container')?.style.setProperty('visibility', 'hidden');
     document.getElementById('leaveBtn')?.style.setProperty('visibility', 'visible');
   };
@@ -201,7 +213,7 @@ const CodeTr: React.FC = () => {
         },
       },
     };
-    console.log(name.current?.value + ' registered in room ' + room.current?.value);
+    console.log(name.current?.value + ' registered in room ' + roomId.current?.value);
     const participant = new Participant(name.current?.value || '', sendMessage);
     participants[name.current?.value || ''] = participant;
     const video = participant.video;
@@ -272,7 +284,8 @@ const CodeTr: React.FC = () => {
         <div className='title'>😁FACE OUT😁</div>
         <input type="text" id="name" placeholder="Enter your name" />
         <input type="text" id="roomName" placeholder="Enter room name" />
-        <button id="registerBtn" onClick={register}>🔑Enter🔑</button>
+        <button id="registerBtn" onClick={createRoom}>🔑방 생성🔑</button>
+        <button id="registerBtn" onClick={register} >방 참가</button>
       </div>
       <button id="leaveBtn"onClick={leaveRoom}>🙌Leave🙌</button>
       <div id='participants'>
