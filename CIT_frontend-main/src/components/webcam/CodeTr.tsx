@@ -1,7 +1,7 @@
 // React 및 관련 라이브러리 임포트
 import * as React from "react";
 import { useEffect, useRef } from 'react';
-import kurentoUtils from 'kurento-utils';
+import * as kurentoUtils from 'kurento-utils';
 import './CodeTr.css';
 
 // 참가자 클래스에 대한 상수 정의
@@ -77,14 +77,14 @@ class Participant {
   }
 
   // 메서드: RTC 피어 생성
-  createRtcPeer(options: any) {
-    this.rtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, (error: any) => {
-      if (error) {
-        return console.error(error);
-      }
-      this.rtcPeer.generateOffer(this.offerToReceiveVideo.bind(this));
-    });
-  }
+  // createRtcPeer(options: any) {
+  //   this.rtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, (error: any) => {
+  //     if (error) {
+  //       return console.error(error);
+  //     }
+  //     this.rtcPeer.generateOffer(this.offerToReceiveVideo.bind(this));
+  //   });
+  // }
 
   // 메서드: offer 생성 및 전송
   offerToReceiveVideo(error: any, offerSdp: any) {
@@ -98,7 +98,7 @@ class Participant {
     this.sendMessage(msg);
   }
 
-  // 메서드: ICE 후보 이벤트 처리
+  // 메서드: ICE 후보 이벤트 처리 - 세션이 만들어질 때
   onIceCandidate(candidate: any) {
     console.log('Local candidate' + JSON.stringify(candidate));
     var message = {
@@ -130,7 +130,7 @@ const CodeTr: React.FC = () => {
   // WebSocket 연결 및 메시지 수신 이펙트
   useEffect(() => {
 
-    ws.current = new WebSocket('wss://focusing.site:8081/signal');
+    ws.current = new WebSocket('wss://focusing.site/signal');
     ws.current.onopen = function () {
       console.log('WebSocket connection opened.');
     }
@@ -241,7 +241,7 @@ const CodeTr: React.FC = () => {
       onicecandidate: participant.onIceCandidate.bind(participant),
     };
     
-    participant.createRtcPeer(options);
+   // participant.createRtcPeer(options);
 
     msg.data.forEach(receiveVideo);
   };
@@ -269,7 +269,7 @@ const CodeTr: React.FC = () => {
       onicecandidate: participant.onIceCandidate.bind(participant),
     };
 
-    participant.createRtcPeer(options);
+    //participant.createRtcPeer(options);
   };
 
   // 참가자 나가기 함수
