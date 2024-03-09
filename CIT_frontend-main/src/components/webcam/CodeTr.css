@@ -28,7 +28,7 @@
     font-weight: bold;
     font-size: 37px;
   }
-  #name{
+  #container input{
     position: relative;
     width: 500px;
     height: 40px;
@@ -45,7 +45,7 @@
     font-weight: bold;
     text-align: center;
   }
-  #roomName{
+  #roomId{
     /* position: relative;
     width: 500px;
     height: 40px;
