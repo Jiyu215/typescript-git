@@ -1,16 +1,17 @@
+// React 및 관련 라이브러리 임포트
 import * as React from "react";
 import { useEffect, useRef } from 'react';
 import kurentoUtils from 'kurento-utils';
 import './CodeTr.css';
 
-
+// 참가자 클래스에 대한 상수 정의
 const PARTICIPANT_MAIN_CLASS = 'participant main';
 const PARTICIPANT_CLASS = 'participant';
 
-// Participant 클래스 선언
+// Participant 클래스 정의
 class Participant {
+  // 속성 선언
   name: string;
-  roomId: string;
   container: HTMLDivElement;
   span: HTMLSpanElement;
   video: HTMLVideoElement;
@@ -23,8 +24,7 @@ class Participant {
 
     // 컨테이너 및 관련 요소 생성
     this.container = document.createElement('div');
-    this.container.className = this.isPresentMainParticipant() ? PARTICIPANT_CLASS : PARTICIPANT_MAIN_CLASS;
-    this.container.id = name;
+    this.container.className = PARTICIPANT_CLASS;
     this.span = document.createElement('span');
     this.video = document.createElement('video');
 
@@ -36,9 +36,6 @@ class Participant {
     // 컨테이너에 요소 추가
     this.container.appendChild(this.video);
     this.container.appendChild(this.span);
-
-    // 컨테이너의 클릭 이벤트 핸들러 설정
-    this.container.onclick = this.switchContainerClass.bind(this);
 
     // 참가자 목록에 컨테이너 추가
     document.getElementById('participants')?.appendChild(this.container);
@@ -57,30 +54,18 @@ class Participant {
     return <>{this.video}</>;
   }
 
-  // 메서드: 참가자 클래스 전환
-  switchContainerClass() {
-    if (this.container.className === PARTICIPANT_CLASS) {
-      // 현재 참가자가 주요 참가자인 경우 모든 주요 참가자 클래스를 일반 참가자 클래스로 변경
-      var elements = Array.prototype.slice.call(document.getElementsByClassName(PARTICIPANT_MAIN_CLASS));
-      elements.forEach(function (item: HTMLElement) {
-        item.className = PARTICIPANT_CLASS;
-      });
-
-      // 현재 참가자 클래스를 주요 참가자 클래스로 변경
-      this.container.className = PARTICIPANT_MAIN_CLASS;
-    } else {
-      // 현재 참가자 클래스를 일반 참가자 클래스로 변경
-      this.container.className = PARTICIPANT_CLASS;
-    }
+  // 메서드: RTC 피어 생성
+  createRtcPeer(options: any) {
+    this.rtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, (error: any) => {
+      if (error) {
+        return console.error(error);
+      }
+      this.rtcPeer.generateOffer(this.offerToReceiveVideo.bind(this));
+    });
   }
 
-  // 메서드: 주요 참가자 여부 확인
-  isPresentMainParticipant() {
-    return document.getElementsByClassName(PARTICIPANT_MAIN_CLASS).length !== 0;
-  }
-
-  // 메서드: 비디오 수신을 위한 offer 생성
-  offerToReceiveVideo(error: any, offerSdp: any, wp: any) {
+  // 메서드: offer 생성 및 전송
+  offerToReceiveVideo(error: any, offerSdp: any) {
     if (error) return console.error('sdp offer error');
     console.log('Invoking SDP offer callback function');
     var msg = {
@@ -92,9 +77,8 @@ class Participant {
   }
 
   // 메서드: ICE 후보 이벤트 처리
-  onIceCandidate(candidate: any, wp: any) {
+  onIceCandidate(candidate: any) {
     console.log('Local candidate' + JSON.stringify(candidate));
-
     var message = {
       id: 'onIceCandidate',
       candidate: candidate,
@@ -113,14 +97,14 @@ class Participant {
   }
 }
 
-// React 컴포넌트
+// React 컴포넌트 정의
 const CodeTr: React.FC = () => {
   const ws = useRef<WebSocket | null>(null);
   const participants: { [name: string]: Participant } = {};
-  const name = useRef(null);
-  const roomId = useRef(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const roomIdRef = useRef<HTMLInputElement>(null);
 
-  // 웹소켓 연결 및 메시지 수신 이펙트
+  // WebSocket 연결 및 메시지 수신 이펙트
   useEffect(() => {
     ws.current = new WebSocket('wss://focusing.site:8081/signal');
     ws.current.onopen = function () {
@@ -162,14 +146,13 @@ const CodeTr: React.FC = () => {
     };
   }, []);
 
-  // 참가자 등록 함수
-  const register = () => {
-    
-    if (!name.current || !roomId.current) return;
+  // 방 참가 함수
+  const joinRoom = () => {
+    if (!nameRef.current?.value || !roomIdRef.current?.value) return;
     const message = {
       id: 'joinRoom',
-      name: name.current.value,
-      roomId: roomId.current.value,
+      name: nameRef.current.value,
+      roomId: roomIdRef.current.value,
     };
     sendMessage(message);
 
@@ -177,11 +160,12 @@ const CodeTr: React.FC = () => {
     document.getElementById('leaveBtn')?.style.setProperty('visibility', 'visible');
   };
 
+  // 방 생성 함수
   const createRoom = () => {
-    if(!name.current) return;
+    if (!nameRef.current?.value) return;
     const message = {
       id:'createRoom',
-      name: name.current.value,
+      name: nameRef.current.value,
     };
     sendMessage(message);
     
@@ -189,16 +173,22 @@ const CodeTr: React.FC = () => {
     document.getElementById('leaveBtn')?.style.setProperty('visibility', 'visible');
   };
 
-  // 새로운 참가자 도착 함수
-  const onNewParticipant = (request: any) => {
-    receiveVideo(request.name);
+  // 방 나가기 함수
+  const leaveRoom = () => {
+    sendMessage({ id: 'exit' });
+    document.getElementById('container')?.style.setProperty('visibility', 'visible');
+    document.getElementById('leaveBtn')?.style.setProperty('visibility', 'hidden');
+    
+    window.location.reload();
   };
 
-  // 비디오 응답 수신 함수
-  const receiveVideoResponse = (result: any) => {
-    participants[result.name].rtcPeer.processAnswer(result.sdpAnswer, (error: any) => {
-      if (error) return console.error(error);
-    });
+  // 메시지 전송 함수
+  const sendMessage = (message: any) => {
+    const jsonMessage = JSON.stringify(message);
+    console.log('Sending message: ' + jsonMessage);
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(jsonMessage);
+    }
   };
 
   // 기존 참가자 처리 함수
@@ -213,9 +203,9 @@ const CodeTr: React.FC = () => {
         },
       },
     };
-    console.log(name.current?.value + ' registered in room ' + roomId.current?.value);
-    const participant = new Participant(name.current?.value || '', sendMessage);
-    participants[name.current?.value || ''] = participant;
+    console.log(nameRef.current?.value + ' registered in room ' + roomIdRef.current?.value);
+    const participant = new Participant(nameRef.current?.value || '', sendMessage);
+    participants[nameRef.current?.value || ''] = participant;
     const video = participant.video;
 
     var options = {
@@ -223,23 +213,21 @@ const CodeTr: React.FC = () => {
       mediaConstraints: constraints,
       onicecandidate: participant.onIceCandidate.bind(participant),
     };
-    participant.rtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, (error: any) => {
-      if (error) {
-        return console.error(error);
-      }
-      participant.rtcPeer.generateOffer(participant.offerToReceiveVideo.bind(participant));
-    });
+    participant.createRtcPeer(options);
 
     msg.data.forEach(receiveVideo);
   };
 
-  // 방 나가기 함수
-  const leaveRoom = () => {
-    sendMessage({ id: 'exit' });
-    document.getElementById('container')?.style.setProperty('visibility', 'visible');
-    document.getElementById('leaveBtn')?.style.setProperty('visibility', 'hidden');
-    
-    window.location.reload();
+  // 새로운 참가자 도착 함수
+  const onNewParticipant = (request: any) => {
+    receiveVideo(request.name);
+  };
+
+  // 비디오 응답 수신 함수
+  const receiveVideoResponse = (result: any) => {
+    participants[result.name].rtcPeer.processAnswer(result.sdpAnswer, (error: any) => {
+      if (error) return console.error(error);
+    });
   };
 
   // 비디오 수신 함수
@@ -253,12 +241,7 @@ const CodeTr: React.FC = () => {
       onicecandidate: participant.onIceCandidate.bind(participant),
     };
 
-    participant.rtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, (error: any) => {
-      if (error) {
-        return console.error(error);
-      }
-      participant.rtcPeer.generateOffer(participant.offerToReceiveVideo.bind(participant));
-    });
+    participant.createRtcPeer(options);
   };
 
   // 참가자 나가기 함수
@@ -269,25 +252,16 @@ const CodeTr: React.FC = () => {
     delete participants[request.name];
   };
 
-  // 메시지 전송 함수
-  const sendMessage = (message: any) => {
-    const jsonMessage = JSON.stringify(message);
-    console.log('Sending message: ' + jsonMessage);
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(jsonMessage);
-    }
-  };
-
   return (
     <div>
       <div id='container'>
         <div className='title'>😁FACE OUT😁</div>
-        <input type="text" id="name" placeholder="Enter your name" />
-        <input type="text" id="roomName" placeholder="Enter room name" />
+        <input type="text" ref={nameRef} placeholder="Enter your name" />
+        <input type="text" ref={roomIdRef} placeholder="Enter room name" />
         <button id="registerBtn" onClick={createRoom}>🔑방 생성🔑</button>
-        <button id="registerBtn" onClick={register} >방 참가</button>
+        <button id="registerBtn" onClick={joinRoom}>방 참가</button>
       </div>
-      <button id="leaveBtn"onClick={leaveRoom}>🙌Leave🙌</button>
+      <button id="leaveBtn" onClick={leaveRoom}>🙌Leave🙌</button>
       <div id='participants'>
         {Object.values(participants).map((participant) => (
           <div key={participant.name}>
