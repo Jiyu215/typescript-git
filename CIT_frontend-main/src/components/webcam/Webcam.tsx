@@ -18,9 +18,24 @@ const VideoElement: React.FC<ParticipantProps> = ({name,ws})=>{
     );
 }
 
-const ParticipantList: React.FC<ParticipantProps> = ({name,ws})=>{
+const ParticipantList: React.FC<ParticipantProps> = ({name,ws,rtcPeer})=>{
     // 주요 참가자인지 여부를 상태로 관리
     const [isMainParticipant, setIsMainParticipant] = useState(false);
+    //참가자 제거 여부
+    const [isRemoved, setIsRemoved] = useState(false);
+
+    const dispose = () => {
+        console.log('Disposing participant ' + name);
+        if (rtcPeer) {
+            rtcPeer.dispose(); // WebRTC 피어 정리
+        }
+        setIsRemoved(true); // 참가자가 제거되었음을 상태로 설정하여 화면에서 제거
+    }
+
+    if (isRemoved) {
+        return null; // 참가자가 제거되었으면 아무것도 렌더링하지 않음
+    }
+
 
     const onIceCandidate = (candidate: any, wp: any) => {
         console.log('Local candidate' + JSON.stringify(candidate));
@@ -54,6 +69,7 @@ const Webcam: React.FC = () => {
     const nameRef = useRef<HTMLInputElement>(null);
     const roomIdRef = useRef<HTMLInputElement>(null);
     const ws = useRef<WebSocket | null>(null);
+    const rtcPeerRef = useRef<any>(null); // rtcPeer 참조값 추가
     const participants: { [name: string]: ParticipantProps } = {};
     
 
@@ -109,7 +125,7 @@ const Webcam: React.FC = () => {
             ws.current.close();
             }
         };
-    },[]);
+    }, []);
   return (
     <>
     <div id='container'>
@@ -120,7 +136,7 @@ const Webcam: React.FC = () => {
         <button id="registerBtn">🔑방 참가🔑</button>
     </div>
     <div id='participants'>
-        {userName && <ParticipantList name={userName}  ws={ws.current}/>}
+        {userName && <ParticipantList name={userName} ws={ws.current} rtcPeer={rtcPeerRef.current}/>}
     </div>
     </>
   );
