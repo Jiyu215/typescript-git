@@ -12,6 +12,7 @@
     "@types/styled-components": "^5.1.34",
     "@types/ws": "^8.5.10",
     "kurento-client": "^7.0.0",
+    "kurento-utils": "^7.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
